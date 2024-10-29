@@ -11,43 +11,49 @@ import (
 
 // Estrutura para receber os dados da requisição POST
 type Data struct {
-	Name  string `json:"name" binding:"required"`
-	Email string `json:"email" binding:"required,email"`
+	Name       string `json:"name" binding:"required"`
+	Vacancy    string `json:"vacancy" binding:"required"`
+	Hardskills string `json:"hardskills" binding:"required"`
+	Softskills string `json:"softskills" binding:"required"`
+	Pcd        string `json:"pcd"`
+	Former     string `json:"former"`
+	Comment    string `json:"comment"`
 }
 
 func main() {
-
+	//load env file
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
+	//get port variable
 	port := os.Getenv("PORT")
 
 	if port == "" {
 		port = "8080"
 	}
 
-	// Cria uma nova instância do Gin
+	//Create new instance Gin
 	router := gin.Default()
 
-	// Define o endpoint POST
+	//Set endpoint POST
 	router.POST("/submit", func(c *gin.Context) {
 		var jsonData Data
 
-		// Valida e vincula o JSON recebido à estrutura Data
+		//JSON data
 		if err := c.ShouldBindJSON(&jsonData); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		// Retorna uma resposta de sucesso com os dados recebidos
+		//Return after response
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Dados recebidos com sucesso!",
 			"data":    jsonData,
 		})
 	})
 
-	// Inicia o servidor na porta 8080
+	//Start server
 	router.Run(":" + port)
 }
