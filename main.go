@@ -1,55 +1,53 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
-type formData struct {
-	Name      string `json:"name"`
-	Vacancy   string `json:"vacancy"`
-	Level     string `json:"level"`
-	HardSkill string `json:"hardskill"`
-	SoftSkill string `json:"softskill"`
-	Pcd       string `json:"pcd"`
-	Former    string `json:"former"`
-	Comment   string `json:"comment"`
-}
-
-func getPostData(w http.ResponseWriter, r *http.Request) {
-	var answer formData
-
-	err := json.NewDecoder(r.Body).Decode(&answer)
-	if err != nil {
-		http.Error(w, "Erro ao decodificar JSON", http.StatusBadRequest)
-		return
-	}
-
-	//fmt.Printf("Name: %s", answer.Name)
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Success!"))
-}
-
-func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hello, Render!")
+// Estrutura para receber os dados da requisição POST
+type Data struct {
+	Name  string `json:"name" binding:"required"`
+	Email string `json:"email" binding:"required,email"`
 }
 
 func main() {
-	r := mux.NewRouter()
-	r.HandleFunc("/", handler)
-	r.HandleFunc("/answer", getPostData).Methods("POST")
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	port := os.Getenv("PORT")
+
 	if port == "" {
 		port = "8080"
 	}
 
-	log.Printf("Server starting on port %s", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	// Cria uma nova instância do Gin
+	router := gin.Default()
+
+	// Define o endpoint POST
+	router.POST("/submit", func(c *gin.Context) {
+		var jsonData Data
+
+		// Valida e vincula o JSON recebido à estrutura Data
+		if err := c.ShouldBindJSON(&jsonData); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Retorna uma resposta de sucesso com os dados recebidos
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Dados recebidos com sucesso!",
+			"data":    jsonData,
+		})
+	})
+
+	// Inicia o servidor na porta 8080
+	router.Run(":" + port)
 }
