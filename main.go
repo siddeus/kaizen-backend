@@ -10,10 +10,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/joho/godotenv"
 )
 
 type Data struct {
@@ -26,21 +27,55 @@ type Data struct {
 	Comment    string `json:"comment"`
 }
 
+type Question struct {
+	Message string `json:"message"`
+}
+
 func main() {
-	err := godotenv.Load()
+
+	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
+	router := gin.Default()
 	port := os.Getenv("PORT")
 
 	if port == "" {
 		port = "8080"
 	}
 
-	router := gin.Default()
+	router.POST("/getNewQuestion", func(c *gin.Context) {
+
+		var jsonQuestion Question
+		var questionBase = "Gere uma questão curta para entrevista sobre Magento 2. O nível da pergunta é " + jsonQuestion.Message
+
+		if err := c.ShouldBindJSON(&jsonQuestion); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		answerGemini, err := gemini(questionBase)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"question": answerGemini,
+		})
+
+		jsonQuestionData, err := json.Marshal(jsonQuestion)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+
+		fmt.Println(jsonQuestionData)
+	})
 
 	router.POST("/submit", func(c *gin.Context) {
+
 		var jsonData Data
 
 		if err := c.ShouldBindJSON(&jsonData); err != nil {
@@ -59,6 +94,7 @@ func main() {
 		}
 
 		jsonString := string(jsonDatas)
+
 		saveData(jsonString)
 	})
 
