@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -39,6 +40,17 @@ func main() {
 	}
 
 	router := gin.Default()
+
+	// Configuração do CORS
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},                             // Permite todas as origens (substitua "*" por uma origem específica, como "http://localhost:3000")
+		AllowMethods:     []string{"GET", "POST", "OPTIONS"},        // Métodos permitidos
+		AllowHeaders:     []string{"Content-Type", "Authorization"}, // Cabeçalhos permitidos
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,           // Permitir cookies (se necessário)
+		MaxAge:           12 * time.Hour, // Cache de CORS por 12 horas
+	}))
+
 	port := os.Getenv("PORT")
 
 	if port == "" {
